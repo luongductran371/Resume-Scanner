@@ -1,0 +1,22 @@
+{
+  "name": "upload-s3-api",
+  "version": "1.0.0",
+  "description": "api to upload file to s3 bucket",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luongductran371/Resume-Scanner.git"
+  },
+  "author": "Leon Tran",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/luongductran371/Resume-Scanner/issues"
+  },
+  "homepage": "https://github.com/luongductran371/Resume-Scanner#readme",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
