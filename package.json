@@ -17,6 +17,10 @@
   },
   "homepage": "https://github.com/luongductran371/Resume-Scanner#readme",
   "dependencies": {
-    "express": "^4.21.2"
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/lib-storage": "^3.758.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "formidable": "^3.5.2"
   }
 }
