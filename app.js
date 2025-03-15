@@ -1,13 +1,13 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-require('dotenv').config();
+require("dotenv").config();
 
-app.set('json spaces', 5);
+app.set("json spaces", 5);
 
 const PORT = process.env.PORT || 3000;
 
-app.get("/",(request, response) => {
-    response.send(`
+app.get("/", (request, response) => {
+  response.send(`
         <h2>File Upload With <code>NodeJs Express</code></h2>
         <form action = "/api/upload" enctype="multipart/form-data" method="post">
             <div>
@@ -18,6 +18,16 @@ app.get("/",(request, response) => {
     `);
 });
 
+app.post("/api/upload", async (request, response) => {
+  await fileparser(request)
+    .then((data) => {
+      response.status(200).json({ message: "Success", data });
+    })
+    .catch((error) => {
+      response.status(400).json({ message: "An error occured", error });
+    });
+});
+
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
