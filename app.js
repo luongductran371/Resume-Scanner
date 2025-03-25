@@ -5,6 +5,7 @@ require("dotenv").config();
 app.set("json spaces", 5);
 
 const PORT = process.env.PORT || 3000;
+const fileparser = require("./file-parser");
 
 app.get("/", (request, response) => {
   response.send(`

@@ -1,4 +1,3 @@
-const formidable = require("formidable");
 const Transform = require("stream").Transform;
 const { Upload } = require("@aws-sdk/lib-storage");
 const { S3Client } = require("@aws-sdk/client-s3");
@@ -50,7 +49,7 @@ const parsefile = async (request) => {
           params: {
             ACL: "public-read",
             Bucket,
-            Key: `{Date.now().toString()}-${this.originalFilename}`,
+            Key: `${Date.now().toString()}-${this.originalFilename}`,
             Body: this._writeStream,
           },
           tag: [],
