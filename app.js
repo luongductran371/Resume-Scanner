@@ -1,6 +1,10 @@
 const express = require("express");
 const app = express();
 app.use(express.json());
+
+const fs = require('fs');
+const pdf = require('pdf-parse');
+
 const port = 3000;  
 
 const multer = require("multer");
@@ -25,7 +29,14 @@ app.get("/", (req, res) => {
 
 app.post("/upload", upload.single('resume'), (req, res) => {
   console.log("Request file:", req.file);
-  res.send("Success, Resume uploaded!");
+
+  let dataBuffer = fs.readFileSync(req.file.path);
+  pdf(dataBuffer).then(function(data) {
+    console.log(data.text); 
+    res.send("Success, Resume uploaded and parsed!");
+  }).catch(err => {
+    console.error("Error parsing PDF:", err);
+  });
 });
 
 app.listen(port, () => {
