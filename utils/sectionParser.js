@@ -1,5 +1,7 @@
+const e = require('express');
 const educationParser = require('./educationParser');
 const experienceParser = require('./experienceParser');
+const skillsParser = require('./skillsParser');
 
 function parseSection(lines) {
 
@@ -16,6 +18,9 @@ function parseSection(lines) {
   else if (title.toLowerCase().includes("experience") || title.toLowerCase().includes("work")) {
     section.title = "Experience";
     section.content = experienceParser(content);
+  } else if (title.toLowerCase().includes("skill")) {
+    section.title = "Skills";
+    section.content = skillsParser(content);
   }
   return section;
 }
