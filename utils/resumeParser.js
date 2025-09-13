@@ -1,5 +1,6 @@
 const parsePersonalInfo = require('./personalInfoParser');
 const parseSection = require('./sectionParser');
+const mergeSection = require('./mergeSection');
 
 function resumeParser(data) {
   const resultData = {
@@ -33,6 +34,8 @@ function resumeParser(data) {
       const parsedSection = parseSection(lines);
       resultData.sections.push(parsedSection);}
   });
+
+  resultData.sections = mergeSection(resultData.sections);
 
   return resultData;
 }
