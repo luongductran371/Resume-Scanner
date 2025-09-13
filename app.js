@@ -17,8 +17,9 @@ app.post("/upload", upload.single("resume"), (req, res) => {
   const dataBuffer = fs.readFileSync(req.file.path);
   pdf(dataBuffer)
     .then((data) => {
+      console.log(data.text);
       const parsedData = resumeParser(data.text);
-      console.log("Parsed Data:", parsedData);
+      console.log("Parsed Data:", JSON.stringify(parsedData, null, 2));
       res.send(parsedData);
     })
     .catch((err) => {
