@@ -61,7 +61,14 @@ function parsePersonalInfo(lines) {
   return info;
 }
 
+function parseSection(lines) {
+  const title = lines[0];
+  const content = lines.slice(1);
+  return { title, content };
+}
+
 function resumeParser(data) {
+  
   const resultData = {
     name: null,
     location: null,
@@ -70,18 +77,18 @@ function resumeParser(data) {
     linkedin: null,
     sections: {},
   };
-  const sections = data.split(/\n\s*\n/);
+  const blocks = data.split(/\n\s*\n/);
 
-  // clean the sections until the first section that has a title
-  while (sections.length) {
-    const firstLine = sections[0].split("\n")[0].trim();
+  // clean the blocks until the first section that has a title
+  while (blocks.length) {
+    const firstLine = blocks[0].split("\n")[0].trim();
     if (firstLine && /^[A-Z][A-Za-z\s]+$/.test(firstLine)) {
       break;
     }
-    sections.shift();
+    blocks.shift();
   }
 
-  sections.forEach((section, i) => {
+  blocks.forEach((section, i) => {
     const lines = section
       .split("\n")
       .map((line) => line.trim())
@@ -90,12 +97,9 @@ function resumeParser(data) {
     if (i === 0) {
       const personalInfo = parsePersonalInfo(lines);
       Object.assign(resultData, personalInfo);
-      console.log("Result Data",resultData);
       } else {
-        console.log(`Section ${i}:`, lines[0]); // Section title
-        lines.slice(1).forEach((line) => {
-          console.log(" -", line); // Section content
-        });
+      const parsedSection = parseSection(lines);
+      resultData.sections[parsedSection.title] = parsedSection.content; 
       }
     
   });
