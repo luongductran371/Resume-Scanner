@@ -1,6 +1,5 @@
-const parsePersonalInfo = require('./personalInfoParser');
-const parseSection = require('./sectionParser');
-const mergeSection = require('./mergeSection');
+const { sectionParser, personalInfoParser } = require('../../parsers');
+const mergeSection = require('./sectionMerger');
 
 function resumeParser(data) {
   const resultData = {
@@ -27,11 +26,11 @@ function resumeParser(data) {
       .filter(Boolean);
 
     if (i === 0) {
-      const personalInfo = parsePersonalInfo(lines);
+      const personalInfo = personalInfoParser(lines);
       Object.assign(resultData, personalInfo);
     } else {
       // maybe this should return a list of parsed sections
-      const parsedSection = parseSection(lines);
+      const parsedSection = sectionParser(lines);
       resultData.sections.push(parsedSection);}
   });
 

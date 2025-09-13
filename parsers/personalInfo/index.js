@@ -1,4 +1,4 @@
-function parsePersonalInfo(lines) {
+function personalInfoParser(lines) {
   const info = {
     name: null,
     location: null,
@@ -27,4 +27,4 @@ function parsePersonalInfo(lines) {
   return info;
 }
 
-module.exports = parsePersonalInfo;
+module.exports = personalInfoParser;

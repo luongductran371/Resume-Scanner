@@ -1,9 +1,9 @@
 const e = require('express');
-const educationParser = require('./educationParser');
-const experienceParser = require('./experienceParser');
-const skillsParser = require('./skillsParser');
+const  educationParser  = require('./education');
+const  experienceParser  = require('./experience');
+const  skillsParser  = require('./skill');
 
-function parseSection(lines) {
+function sectionParser(lines) {
 
   // i'm rewriting this function to return education, experience, skills, projects, etc
   // based on the first line as the title and the rest as content
@@ -25,4 +25,4 @@ function parseSection(lines) {
   return section;
 }
 
-module.exports = parseSection;
+module.exports = sectionParser;
