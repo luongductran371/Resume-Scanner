@@ -1,107 +1,149 @@
+// experienceParser.js
 // return a list of experience objects
 function experienceParser(lines) {
-    const experienceList = [];
-    let currentExperience = initialExperienceObject();
+  const experienceList = [];
+  let current = initialExperienceObject();
+  let i = 0;
+  while (i < lines.length) {
+    let line = cleanLine(lines[i]);
+    if (!line) { i++; continue; }
 
-    for (let i = 0; i < lines.length; i++) {
-        let line = cleanLine(lines[i]);
+    // Skip section headers
+    if (/^(WORK|PROJECTS|RESEARCH) EXPERIENCE$/i.test(line)) { i++; continue; }
 
-        if (!line) continue; // skip empty lines
-
-        // check if it's the last line then push the current experience
-        // if the line indicates a new job, push the current one to the list and start a new one
-        if (isNewJob(line) || i === lines.length - 1) {
-            if (hasAnyData(currentExperience)) {
-                experienceList.push(currentExperience);
-                currentExperience = initialExperienceObject();
-            }
-        }
-
-        // check for job title (usually comes first and doesn't have company indicators)
-        if (!currentExperience.title && !isCompanyLine(line) && !isDateLine(line)) {
-            currentExperience.title = line;
-        }
-
-        // check for company name
-        if (!currentExperience.company && isCompanyLine(line)) {
-            // Extract company name, removing common suffixes
-            currentExperience.company = extractCompanyName(line);
-        }
-
-        // check for dates/duration
-        if (!currentExperience.duration && isDateLine(line)) {
-            currentExperience.duration = extractDuration(line);
-        }
-
-        // collect responsibilities/descriptions
-        if (currentExperience.title && currentExperience.company && 
-            !isNewJob(line) && !isDateLine(line) && !isCompanyLine(line)) {
-            if (!currentExperience.responsibilities) {
-                currentExperience.responsibilities = [];
-            }
-            currentExperience.responsibilities.push(line);
-        }
+    // Detect job entry: company + date on same line
+    if (isCompanyLine(line) && isDateLine(line)) {
+      if (hasAnyData(current)) {
+        experienceList.push(current);
+        current = initialExperienceObject();
+      }
+      current.company = extractCompanyName(line);
+      current.duration = extractDuration(line);
+      i++;
+      // Check if next line is a title
+      if (i < lines.length && looksLikeTitleLine(cleanLine(lines[i]))) {
+        current.title = cleanLine(lines[i]);
+        i++;
+      }
+      continue;
     }
 
-    return experienceList;
+    // Detect company line followed by title line
+    if (isCompanyLine(line) && i + 1 < lines.length && looksLikeTitleLine(cleanLine(lines[i + 1]))) {
+      if (hasAnyData(current)) {
+        experienceList.push(current);
+        current = initialExperienceObject();
+      }
+      current.company = extractCompanyName(line);
+      i++;
+      current.title = cleanLine(lines[i]);
+      i++;
+      continue;
+    }
+
+    // Detect date line (duration only)
+    if (isDateLine(line) && !isCompanyLine(line)) {
+      current.duration = extractDuration(line);
+      i++;
+      continue;
+    }
+
+    // Detect title line (standalone)
+    if (looksLikeTitleLine(line) && !isCompanyLine(line) && !isDateLine(line)) {
+      current.title = line;
+      i++;
+      continue;
+    }
+
+    // Detect bullet/responsibility
+    if (/^[-•●]/.test(lines[i]) || (line && !isCompanyLine(line) && !isDateLine(line) && !looksLikeTitleLine(line))) {
+      if (!current.responsibilities) current.responsibilities = [];
+      current.responsibilities.push(line);
+      i++;
+      continue;
+    }
+
+    // If line doesn't match anything, treat as company if empty
+    if (!current.company && isCompanyLine(line)) {
+      current.company = extractCompanyName(line);
+      i++;
+      continue;
+    }
+
+    i++;
+  }
+  if (hasAnyData(current)) experienceList.push(current);
+  return experienceList;
 }
 
-function isNewJob(line) {
-    // Look for patterns that indicate a new job entry
-    return /^[A-Z][A-Za-z\s]+(Engineer|Developer|Manager|Analyst|Director|Lead|Senior|Junior|Intern)/i.test(line) ||
-           /^(Software|Senior|Junior|Lead|Principal|Staff|Head of)/i.test(line);
+function looksLikeTitleLine(line) {
+  // Titles often contain role keywords and may not include commas/years
+  return /\b(Engineer|Developer|Manager|Analyst|Director|Lead|Coordinator|Consultant|Assistant|Intern|Fullstack|Full[-\s]?Stack)\b/i.test(line)
+         && !isCompanyLine(line)
+         && !isDateLine(line);
 }
 
 function isCompanyLine(line) {
-    return /(Inc|LLC|Ltd|Corp|Corporation|Company|Technologies|Systems|Solutions|Group|Team)/i.test(line) ||
-           /\b(at\s+|@\s*)/i.test(line);
+  // Broader company heuristics: comma-separated location/company patterns OR capitalized proper nouns
+  if (/(Inc|LLC|Ltd|Corp|Corporation|Company|Institute|College|University|Center|School|Solutions|Technologies|Group|Studio|Lab)/i.test(line)) {
+    return true;
+  }
+  // also treat lines with commas and no verbs and with location-like tokens as company lines
+  if (/,/.test(line) && /\b(MI|CA|NY|TX|FL|WA|IL|OH|IN|GA|PA|MA|TN|VA|NC|SC|MI|Holland|Ho Chi Minh|HCM)\b/i.test(line)) {
+    return true;
+  }
+  return false;
 }
 
 function isDateLine(line) {
-    return /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{1,2}\/|\d{4})\b/i.test(line) ||
-           /\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}|\b(19|20)\d{2}\s*[-–—]\s*present/i.test(line) ||
-           /\d+\s*(year|month|yr|mo)s?\b/i.test(line);
+  // month-year ranges or 4-digit years or "Present"
+  if (/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b.*\b(?:19|20)\d{2}/i.test(line)) return true;
+  if (/\b(19|20)\d{2}\s*[-–—]\s*(present|(19|20)\d{2})/i.test(line)) return true;
+  if (/\b(?:\d{1,2}\/\d{4}|\d{4})\b/.test(line)) return true;
+  return false;
 }
 
 function extractCompanyName(line) {
-    // Remove "at" or "@" prefixes and clean up
-    let company = line.replace(/^(at\s+|@\s*)/i, '').trim();
-    
-    // Remove location if present (usually after comma)
-    const parts = company.split(',');
-    return parts[0].trim();
+  let company = line.replace(/^(at\s+|@\s*)/i, '').trim();
+  // if there's a date in line, take before date
+  const dateMatch = company.match(/\b(19|20)\d{2}\b/);
+  if (dateMatch) {
+    company = company.slice(0, dateMatch.index).trim();
+  }
+  // remove trailing dashes or dates
+  company = company.replace(/[-–—]\s*$/, '').trim();
+  // if comma present, first part is likely name
+  if (company.includes(',')) {
+    return company.split(',')[0].trim();
+  }
+  return company;
 }
 
 function extractDuration(line) {
-    // Extract date ranges or duration
-    const dateRange = line.match(/\b(19|20)\d{2}\s*[-–—]\s*((19|20)\d{2}|present)/i);
-    if (dateRange) return dateRange[0];
-    
-    const monthYear = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(19|20)\d{2}\s*[-–—]\s*((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(19|20)\d{2}|present)/i);
-    if (monthYear) return monthYear[0];
-    
-    const duration = line.match(/\d+\s*(year|month|yr|mo)s?\b/i);
-    if (duration) return duration[0];
-    
-    return line.trim();
+  const dateRange = line.match(/\b(19|20)\d{2}\s*[-–—]\s*(present|(19|20)\d{2})/i);
+  if (dateRange) return dateRange[0];
+  const monthYearRange = line.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}\s*[-–—]\s*(present|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})/i);
+  if (monthYearRange) return monthYearRange[0];
+  const singleYear = line.match(/\b(19|20)\d{2}\b/);
+  if (singleYear) return singleYear[0];
+  return line.trim();
 }
 
 function cleanLine(line) {
-    return line.replace(/^[-•●\s]+/, '').trim();
+  return (line || '').replace(/^[-•●\s]+/, '').trim();
 }
 
-function hasAnyData(experience) {
-    return experience.title || experience.company || experience.duration || 
-           (experience.responsibilities && experience.responsibilities.length > 0);
+function hasAnyData(exp) {
+  return !!(exp.title || exp.company || exp.duration || (exp.responsibilities && exp.responsibilities.length));
 }
 
 function initialExperienceObject() {
-    return {
-        title: null,
-        company: null,
-        duration: null,
-        responsibilities: null
-    };
+  return {
+    title: null,
+    company: null,
+    duration: null,
+    responsibilities: null
+  };
 }
 
 module.exports = experienceParser;

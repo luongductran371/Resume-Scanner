@@ -1,164 +1,97 @@
+// skillsParser.js
 // return categorized skills object
 function skillsParser(lines) {
-    const skillsData = {
-        technical: [],
-        languages: [],
-        frameworks: [],
-        tools: [],
-        soft: [],
-        other: []
-    };
+  const skillsData = {
+    languages: [],
+    frameworks: [],
+    tools: [],
+    technical: [],
+    soft: [],
+    other: []
+  };
 
-    const allSkills = [];
+  const allSkills = [];
 
-    // First, extract all potential skills from lines
-    for (let line of lines) {
-        line = cleanLine(line);
-        if (!line) continue;
+  for (let raw of lines) {
+    let line = cleanLine(raw);
+    if (!line) continue;
+    if (isHeaderLine(line)) continue;
 
-        // Skip section headers
-        if (isHeaderLine(line)) continue;
-
-        // Split by common delimiters and extract skills
-        const skills = extractSkillsFromLine(line);
-        allSkills.push(...skills);
+    // If the line contains "Label: items", split label and items
+    const colonIndex = line.indexOf(':');
+    if (colonIndex !== -1) {
+      const label = line.slice(0, colonIndex).trim().toLowerCase();
+      const items = line.slice(colonIndex + 1).trim();
+      const parts = splitSkillItems(items);
+      // Map label => preferred category
+      if (/programming|language|languages/i.test(label)) {
+        parts.forEach(p => allSkills.push({skill:p, cat:'languages'}));
+        continue;
+      }
+      if (/tool|framework|frameworks|tools|libraries/i.test(label)) {
+        parts.forEach(p => allSkills.push({skill:p, cat:'frameworks'}));
+        continue;
+      }
+      if (/skill(s)?$/i.test(label)) {
+        parts.forEach(p => allSkills.push({skill:p, cat:'technical'}));
+        continue;
+      }
+      // fallback: just push items without category
+      parts.forEach(p => allSkills.push({skill:p, cat:null}));
+      continue;
     }
 
-    // Categorize each skill
-    allSkills.forEach(skill => {
-        const category = categorizeSkill(skill);
-        if (!skillsData[category].includes(skill)) {
-            skillsData[category].push(skill);
-        }
-    });
+    // if no colon, split using delimiters
+    const parts = splitSkillItems(line);
+    parts.forEach(p => allSkills.push({skill:p, cat:null}));
+  }
 
-    // Remove empty categories
-    Object.keys(skillsData).forEach(category => {
-        if (skillsData[category].length === 0) {
-            delete skillsData[category];
-        }
-    });
+  // categorize and dedupe
+  allSkills.forEach(({skill, cat}) => {
+    const normalized = skill.trim();
+    const inferred = cat || categorizeSkill(normalized);
+    if (!skillsData[inferred]) skillsData[inferred] = [];
+    if (!skillsData[inferred].includes(normalized)) {
+      skillsData[inferred].push(normalized);
+    }
+  });
 
-    return skillsData;
+  // remove empty categories
+  Object.keys(skillsData).forEach(k => {
+    if (!skillsData[k] || skillsData[k].length === 0) delete skillsData[k];
+  });
+
+  return skillsData;
 }
 
-function extractSkillsFromLine(line) {
-    const skills = [];
-    
-    // Split by various delimiters
-    const delimiters = /[,;•●|·\n]/;
-    const parts = line.split(delimiters);
-    
-    parts.forEach(part => {
-        part = part.trim();
-        
-        // Skip empty parts or very short parts
-        if (!part || part.length < 2) return;
-        
-        // Skip common non-skill words
-        if (isNonSkillWord(part)) return;
-        
-        // Handle parenthetical experience levels like "JavaScript (5 years)"
-        const cleanSkill = part.replace(/\s*\([^)]*\)\s*$/, '').trim();
-        
-        if (cleanSkill && cleanSkill.length >= 2) {
-            skills.push(cleanSkill);
-        }
-    });
-    
-    return skills;
+function splitSkillItems(text) {
+  // split by commas, semicolons, pipes or bullets
+  const parts = text.split(/[,;|•●·\/\\]/).map(p => p.trim()).filter(Boolean);
+  return parts;
 }
 
 function categorizeSkill(skill) {
-    const skillLower = skill.toLowerCase();
-    
-    // Programming languages
-    const languages = [
-        'javascript', 'python', 'java', 'c++', 'c#', 'php', 'ruby', 'go', 'rust',
-        'typescript', 'swift', 'kotlin', 'scala', 'perl', 'r', 'matlab', 'sql',
-        'html', 'css', 'bash', 'powershell'
-    ];
-    
-    // Frameworks and libraries
-    const frameworks = [
-        'react', 'angular', 'vue', 'node.js', 'express', 'django', 'flask',
-        'spring', 'laravel', 'rails', 'asp.net', 'jquery', 'bootstrap',
-        'tailwind', 'next.js', 'nuxt.js', 'gatsby', 'svelte', 'ember'
-    ];
-    
-    // Tools and technologies
-    const tools = [
-        'git', 'docker', 'kubernetes', 'jenkins', 'aws', 'azure', 'gcp',
-        'linux', 'windows', 'macos', 'mysql', 'postgresql', 'mongodb',
-        'redis', 'elasticsearch', 'nginx', 'apache', 'webpack', 'babel',
-        'jest', 'cypress', 'selenium', 'postman', 'jira', 'confluence'
-    ];
-    
-    // Soft skills
-    const softSkills = [
-        'leadership', 'communication', 'teamwork', 'problem solving',
-        'project management', 'agile', 'scrum', 'mentoring', 'training',
-        'presentation', 'analytical thinking', 'creativity', 'adaptability'
-    ];
-    
-    // Check categories
-    if (languages.some(lang => skillLower.includes(lang))) {
-        return 'languages';
-    }
-    
-    if (frameworks.some(fw => skillLower.includes(fw))) {
-        return 'frameworks';
-    }
-    
-    if (tools.some(tool => skillLower.includes(tool))) {
-        return 'tools';
-    }
-    
-    if (softSkills.some(soft => skillLower.includes(soft))) {
-        return 'soft';
-    }
-    
-    // If it looks technical but didn't match above categories
-    if (isTechnicalSkill(skillLower)) {
-        return 'technical';
-    }
-    
-    return 'other';
-}
+  const s = skill.toLowerCase();
 
-function isTechnicalSkill(skill) {
-    // Look for technical patterns
-    const technicalPatterns = [
-        /\b(api|rest|graphql|microservices|devops|ci\/cd)\b/,
-        /\b(machine learning|ai|data science|analytics)\b/,
-        /\b(frontend|backend|full.?stack|mobile|web)\b/,
-        /\b(database|nosql|orm|mvc|spa|pwa)\b/,
-        /\b(cloud|serverless|container|virtualization)\b/
-    ];
-    
-    return technicalPatterns.some(pattern => pattern.test(skill));
+  const languages = ['javascript','python','java','sql','c#','c++','typescript','ruby','go','php','rust','swift','kotlin'];
+  const frameworks = ['react','reactjs','node','node.js','express','spring','django','flask','angular','vue','flutter'];
+  const tools = ['git','docker','kubernetes','aws','azure','gcp','firebase','mysql','postgresql','mongodb','redis','jira','postman'];
+
+  if (languages.some(l => s === l || s.includes(l + ' ' ) || s.includes(' ' + l))) return 'languages';
+  if (frameworks.some(f => s.includes(f))) return 'frameworks';
+  if (tools.some(t => s.includes(t))) return 'tools';
+
+  if (/\b(api|rest|graphql|microservices|devops|ci\/cd|serverless|cloud)\b/i.test(s)) return 'technical';
+  if (/\b(communication|leadership|teamwork|management|agile|scrum|problem solving)\b/i.test(s)) return 'soft';
+  return 'other';
 }
 
 function isHeaderLine(line) {
-    // Skip common section headers
-    const headers = /^(skills?|technical skills?|technologies?|programming|languages?|tools?|expertise|competencies)$/i;
-    return headers.test(line.trim());
-}
-
-function isNonSkillWord(word) {
-    const nonSkills = [
-        'and', 'or', 'with', 'in', 'of', 'for', 'at', 'on', 'the', 'a', 'an',
-        'years?', 'months?', 'experience', 'proficient', 'familiar', 'knowledge',
-        'basic', 'intermediate', 'advanced', 'expert', 'including'
-    ];
-    
-    return nonSkills.some(nonSkill => 
-        new RegExp(`^${nonSkill}$`, 'i').test(word.trim())
-    );
+  return /^(skills?|technical skills?|technologies?|programming|languages?|tools?|expertise|competencies)$/i.test(line.trim());
 }
 
 function cleanLine(line) {
-    return line.replace(/^[-•●\s]+/, '').trim();
+  return (line || '').replace(/^[-•●\s]+/, '').trim();
 }
 
 module.exports = skillsParser;
