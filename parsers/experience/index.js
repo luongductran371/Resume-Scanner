@@ -2,7 +2,8 @@
 // return a list of experience objects
 function experienceParser(lines) {
   const experienceList = [];
-  let current = initialExperienceObject();
+  let currentCompany = null;
+  let currentPosition = null;
   let i = 0;
   while (i < lines.length) {
     let line = cleanLine(lines[i]);
@@ -11,69 +12,137 @@ function experienceParser(lines) {
     // Skip section headers
     if (/^(WORK|PROJECTS|RESEARCH) EXPERIENCE$/i.test(line)) { i++; continue; }
 
-    // Detect job entry: company + date on same line
+    // Detect company + date on same line
     if (isCompanyLine(line) && isDateLine(line)) {
-      if (hasAnyData(current)) {
-        experienceList.push(current);
-        current = initialExperienceObject();
+      // Save previous company
+      if (currentCompany) {
+        if (currentPosition) {
+          currentCompany.positions.push(currentPosition);
+          currentPosition = null;
+        }
+        experienceList.push(currentCompany);
       }
-      current.company = extractCompanyName(line);
-      current.duration = extractDuration(line);
+      currentCompany = {
+        company: extractCompanyName(line),
+        duration: extractDuration(line),
+        location: extractLocation(line),
+        positions: []
+      };
       i++;
       // Check if next line is a title
       if (i < lines.length && looksLikeTitleLine(cleanLine(lines[i]))) {
-        current.title = cleanLine(lines[i]);
+        currentPosition = {
+          title: cleanLine(lines[i]),
+          responsibilities: []
+        };
         i++;
+      } else {
+        currentPosition = null;
       }
       continue;
     }
 
     // Detect company line followed by title line
     if (isCompanyLine(line) && i + 1 < lines.length && looksLikeTitleLine(cleanLine(lines[i + 1]))) {
-      if (hasAnyData(current)) {
-        experienceList.push(current);
-        current = initialExperienceObject();
+      if (currentCompany) {
+        if (currentPosition) {
+          currentCompany.positions.push(currentPosition);
+          currentPosition = null;
+        }
+        experienceList.push(currentCompany);
       }
-      current.company = extractCompanyName(line);
+      currentCompany = {
+        company: extractCompanyName(line),
+        duration: null,
+        location: extractLocation(line),
+        positions: []
+      };
       i++;
-      current.title = cleanLine(lines[i]);
+      currentPosition = {
+        title: cleanLine(lines[i]),
+        responsibilities: []
+      };
       i++;
       continue;
     }
 
-    // Detect date line (duration only)
+    // Detect date line (duration only for position)
     if (isDateLine(line) && !isCompanyLine(line)) {
-      current.duration = extractDuration(line);
+      if (currentPosition) {
+        currentPosition.duration = extractDuration(line);
+      } else if (currentCompany) {
+        currentCompany.duration = extractDuration(line);
+      }
       i++;
       continue;
     }
 
-    // Detect title line (standalone)
+    // Detect title line (standalone, new position in same company)
     if (looksLikeTitleLine(line) && !isCompanyLine(line) && !isDateLine(line)) {
-      current.title = line;
+      if (currentPosition && currentCompany) {
+        currentCompany.positions.push(currentPosition);
+      }
+      currentPosition = {
+        title: line,
+        responsibilities: []
+      };
       i++;
       continue;
     }
 
     // Detect bullet/responsibility
     if (/^[-•●]/.test(lines[i]) || (line && !isCompanyLine(line) && !isDateLine(line) && !looksLikeTitleLine(line))) {
-      if (!current.responsibilities) current.responsibilities = [];
-      current.responsibilities.push(line);
+      if (currentPosition) {
+        currentPosition.responsibilities.push(line);
+      }
       i++;
       continue;
     }
 
     // If line doesn't match anything, treat as company if empty
-    if (!current.company && isCompanyLine(line)) {
-      current.company = extractCompanyName(line);
+    if (!currentCompany && isCompanyLine(line)) {
+      currentCompany = {
+        company: extractCompanyName(line),
+        duration: null,
+        location: extractLocation(line),
+        positions: []
+      };
       i++;
       continue;
     }
 
     i++;
   }
-  if (hasAnyData(current)) experienceList.push(current);
+  // Push last position and company
+  if (currentPosition && currentCompany) {
+    currentCompany.positions.push(currentPosition);
+  }
+  if (currentCompany) {
+    experienceList.push(currentCompany);
+  }
   return experienceList;
+// Extract location from a line using regex and known patterns
+function extractLocation(line) {
+  // US states and some common cities
+  const locationRegex = /,\s*([A-Za-z .]+,\s*[A-Z]{2})|,\s*([A-Za-z .]+)$/;
+  const match = line.match(locationRegex);
+  if (match) {
+    return match[1] || match[2];
+  }
+  // Try splitting by comma and checking for state abbreviations
+  const parts = line.split(',').map(p => p.trim());
+  const usStates = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+  for (let part of parts) {
+    if (usStates.includes(part)) {
+      return part;
+    }
+    // If part looks like a city, return it
+    if (/^[A-Za-z .]+$/.test(part) && part.length > 2) {
+      return part;
+    }
+  }
+  return null;
+}
 }
 
 function looksLikeTitleLine(line) {
@@ -133,17 +202,6 @@ function cleanLine(line) {
   return (line || '').replace(/^[-•●\s]+/, '').trim();
 }
 
-function hasAnyData(exp) {
-  return !!(exp.title || exp.company || exp.duration || (exp.responsibilities && exp.responsibilities.length));
-}
-
-function initialExperienceObject() {
-  return {
-    title: null,
-    company: null,
-    duration: null,
-    responsibilities: null
-  };
-}
+// No longer needed
 
 module.exports = experienceParser;

@@ -10,21 +10,32 @@ function personalInfoParser(lines) {
   if (lines[0]) info.name = lines[0];
 
   if (lines[1]) {
-    const parts = lines[1].split("|").map(part => part.trim());
+
+    const detailsLine = lines[1] || '';
+
+    // Normalize separators: pipe, bullet, dot, dash, etc.
+    const normalized = detailsLine.replace(/[|•·\-—‒]+/g, '|');
+
+    // Split and trim each part
+    const parts = normalized.split('|').map(p => p.trim()).filter(Boolean);
     parts.forEach(part => {
-      if (/^\+?\d{10,}$/.test(part.replace(/[\s\-()]/g, ''))) {
+      if (!info.phone && /^\+?\d{10,}$/.test(part.replace(/[\s\-()]/g, ''))) {
         info.phone = part;
-      } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part)) {
+      } else if (!info.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part)) {
         info.email = part;
-      } else if (/linkedin\.com\/[A-Za-z0-9_-]+/.test(part)) {
+      } else if (!info.linkedin && /linkedin\.com\/[A-Za-z0-9_-]+/.test(part)) {
         info.linkedin = part;
-      } else {
+      } else if(!info.location && isLocation(part)) {
         info.location = part;
       }
     });
   }
 
   return info;
+}
+
+function isLocation(str) {
+  return /[A-Za-z]{2,},?\s?[A-Za-z]{2,}/.test(str) && !/\d/.test(str);
 }
 
 module.exports = personalInfoParser;
