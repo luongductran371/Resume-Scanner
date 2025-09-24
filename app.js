@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors'); 
 const fs = require("fs");
 const pdf = require("pdf-parse");
 const mammoth = require("mammoth");
@@ -8,7 +9,9 @@ const resumeParser = require("./services/resumeParser");
 const app = express();
 const port = 3000;
 
+app.use(cors()); 
 app.use(express.json());
+app.options('*', cors()); 
 
 app.post("/upload", upload.single("resume"), (req, res) => {
   const dataBuffer = fs.readFileSync(req.file.path);
