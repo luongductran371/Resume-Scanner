@@ -44,6 +44,22 @@ function resumeParser(data) {
     }
   }
 
+  // Fallback: extract email from entire text if still missing
+  if (!resultData.email) {
+    const globalEmail = extractEmailFromText(data);
+    if (globalEmail) {
+      resultData.email = globalEmail;
+    }
+  }
+
+  // Fallback: extract LinkedIn from entire text if still missing
+  if (!resultData.linkedin) {
+    const globalLinkedIn = extractLinkedInFromText(data);
+    if (globalLinkedIn) {
+      resultData.linkedin = globalLinkedIn;
+    }
+  }
+
   return resultData;
 }
 
@@ -62,4 +78,24 @@ function extractPhoneFromText(text) {
     }
   }
   return null;
+}
+
+function extractEmailFromText(text) {
+  if (!text) return null;
+  const match = text.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+  return match ? match[0] : null;
+}
+
+function extractLinkedInFromText(text) {
+  if (!text) return null;
+  const match = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9_\-/%\.]+/i);
+  if (!match) return null;
+  let url = match[0].replace(/[).,;]+$/, '');
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url.replace(/^\/\//, '');
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+  return url;
 }

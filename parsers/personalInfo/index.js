@@ -42,8 +42,17 @@ function personalInfoParser(lines) {
 
       // LinkedIn extraction: accept various URL styles
       if (!info.linkedin) {
-        const linkedinMatch = part.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9_\-/%]+/i);
-        if (linkedinMatch) info.linkedin = linkedinMatch[0];
+        const linkedinMatch = part.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9_\-/%\.]+/i);
+        if (linkedinMatch) {
+          let url = linkedinMatch[0].replace(/[).,;]+$/, '');
+          if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url.replace(/^\/\//, '');
+          }
+          if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url; // ensure protocol
+          }
+          info.linkedin = url;
+        }
       }
 
       // Location heuristic (keep last)
