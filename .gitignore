@@ -1,7 +1,101 @@
-.env
-/uploads
-/node_modules
-/frontend/flutter_resume_app/android
-/frontend/flutter_resume_app/android/app/build  
-/frontend/flutter_resume_app/windows
-.idea
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.log
+vscode/
+.idea/
+*.iml
+
+# Node (backend)
+/backend/node_modules/
+/backend/npm-debug.log*
+/backend/yarn-error.log*
+/backend/.env
+/backend/.tmp/
+/backend/dist/
+/backend/build/
+/backend/coverage/
+
+# Node modules at root level (should not be committed)
+node_modules/
+package-lock.json
+
+# Upload logs and test files
+upload_*.log
+upload_error.log
+*_response.log
+*_error.log
+
+# Old structure files (moved to backend/)
+parsers/
+services/
+test/
+test_*.ps1
+
+# Flutter / Dart (frontend)
+/frontend/.dart_tool/
+/frontend/.packages
+/frontend/.flutter-plugins
+/frontend/.flutter-plugins-dependencies
+/frontend/build/
+/frontend/ios/.symlinks/
+/frontend/ios/Pods/
+/frontend/ios/Flutter/Flutter.framework/
+/frontend/ios/Flutter/Flutter.podspec
+/frontend/android/.gradle/
+/frontend/android/app/build/
+/frontend/android/local.properties
+/frontend/web/.dart_tool/
+
+# General archives
+*.zip
+*.tar.gz
+*.tar
+*.7z
+
+# Additional project-specific ignores
+# Documentation and planning files (if temporary)
+RESTRUCTURE_PLAN.md
+
+# New frontend/scripts directories (if experimental)
+frontend_new/
+scripts_new/
+
+# Development documentation (if contains sensitive info)
+docs/DEVELOPMENT.md
+docs/RULES.md
+
+# Resume test files (may contain personal data)
+*.pdf
+*.docx
+*.doc
+sample_resume.*
+
+# Environment and config files
+.env*
+config.json
+settings.json
+
+# Runtime and cache files
+.cache/
+.temp/
+.tmp/
+temp/
+
+# Editor and system files
+*.swp
+*.swo
+*~
+.DS_Store?
+ehthumbs.db
+Desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
