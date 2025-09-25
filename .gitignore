@@ -1,3 +1,7 @@
 .env
 /uploads
 /node_modules
+/frontend/flutter_resume_app/android
+/frontend/flutter_resume_app/android/app/build  
+/frontend/flutter_resume_app/windows
+.idea

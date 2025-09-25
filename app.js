@@ -13,6 +13,11 @@ app.use(cors());
 app.use(express.json());
 app.options('*', cors()); 
 
+// Lightweight health endpoint so mobile devices can verify connectivity
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.post("/upload", upload.single("resume"), (req, res) => {
   const dataBuffer = fs.readFileSync(req.file.path);
   // if it's pdf file then parse it using pdf-parse
@@ -38,10 +43,15 @@ app.post("/upload", upload.single("resume"), (req, res) => {
         res.send(parsedData);
       })
       .catch((err) => {
-        console.error("Error parsing DOC:", err)});
+        console.error("Error parsing DOC:", err);
+        res.status(500).send("Failed to parse resume.");
+      });
+  } else {
+    console.warn("Unsupported mimetype:", req.file.mimetype);
+    res.status(400).send("Unsupported file type.");
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on http://0.0.0.0:${port} (reachable from LAN as http://<your-ip>:${port})`);
 });

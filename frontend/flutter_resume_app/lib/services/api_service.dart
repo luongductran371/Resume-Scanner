@@ -8,10 +8,33 @@ import '../models/parsed_resume.dart';
 import '../utils/logger.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
+  // Prefer override from --dart-define=BASE_URL=http://<host>:3000
+  static const String _envBaseUrl = String.fromEnvironment('BASE_URL');
+
+  // Get base URL based on platform with sensible defaults.
+  // - Web: localhost (same machine)
+  // - Android: 10.0.2.2 (emulator host loopback). For physical device, pass BASE_URL via --dart-define
+  // - Desktop/iOS: localhost
+  static String get baseUrl {
+    if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
+    if (kIsWeb) return 'http://localhost:3000';
+    if (io.Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000';
+  }
 
   static Future<ParsedResume> uploadResume(PlatformFile file) async {
     final uri = Uri.parse('$baseUrl/upload');
+
+    // Quick reachability check to fail fast on wrong BASE_URL (e.g., 10.0.2.2 on physical device)
+    try {
+      final health = await http
+          .get(Uri.parse('$baseUrl/health'))
+          .timeout(const Duration(seconds: 5));
+      AppLogger.i('Health check: ${health.statusCode}');
+    } catch (e) {
+      throw 'Cannot reach API at $baseUrl. If running on a physical Android device, run with --dart-define=BASE_URL=http://<YOUR_PC_IP>:3000 and ensure your server listens on 0.0.0.0';
+    }
+
     final request = http.MultipartRequest('POST', uri);
 
     if (kIsWeb) {
@@ -40,8 +63,8 @@ class ApiService {
 
     AppLogger.i('Uploading ${file.name} to $uri');
 
-    final streamed = await request.send();
-    final resp = await http.Response.fromStream(streamed);
+    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final resp = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 30));
 
     AppLogger.i('Response status: ${resp.statusCode}');
 
