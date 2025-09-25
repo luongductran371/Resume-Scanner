@@ -1,5 +1,0 @@
-$ip = "10.89.161.125"
-Write-Host "Testing API at http://$ip:3000/health"
-curl "http://$ip:3000/health"
-Write-Host ""
-Write-Host "Run Flutter with: flutter run -d `"Pixel 7 Pro`" --dart-define=BASE_URL=http://$ip:3000"
