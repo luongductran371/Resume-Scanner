@@ -26,11 +26,11 @@ upload_error.log
 *_response.log
 *_error.log
 
-# Old structure files (moved to backend/)
-parsers/
-services/
-test/
-test_*.ps1
+# Old structure files (moved to backend/) - only ignore at root level
+/parsers/
+/services/
+/test/
+/test_*.ps1
 
 # Flutter / Dart (frontend)
 /frontend/.dart_tool/
